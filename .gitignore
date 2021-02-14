@@ -4,6 +4,7 @@ typings
 sim_app.py
 .aws-sam
 venv
+.idea
 
 # Created by https://www.gitignore.io/api/osx,linux,python,windows,pycharm,visualstudiocode
 
