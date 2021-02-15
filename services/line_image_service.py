@@ -32,7 +32,7 @@ class LineImageService:
     def ai_image_detect(cls,event):
 
         message_content = cls.line_bot_api.get_message_content(event.message.id)
-        file_name = event.message.id + '.jpg'
+        file_name = '/tmp/' + event.message.id + '.jpg'
         with open(file_name, 'wb') as fd:
             for chunk in message_content.iter_content():
                 fd.write(chunk)
