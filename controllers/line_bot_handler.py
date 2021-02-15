@@ -5,7 +5,7 @@
 '''
 
 from services.user_service import UserService
-
+from services.line_image_service import LineImageService
 class LineBotController:
 
 
@@ -18,3 +18,7 @@ class LineBotController:
     @classmethod
     def unfollow_event(cls,event):
         UserService.line_user_unfollow(event)
+
+    @classmethod
+    def image_event(cls,event):
+        LineImageService.ai_image_detect(event)

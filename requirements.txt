@@ -1,5 +1,10 @@
 requests
 boto3
-boto3-stubs
+boto3-stubs[cloudwatch,s3,dynamodb]
 mypy-boto3-builder
 line-bot-sdk
+watchtower==1.0.6
+tensorflow-cpu==2.4.1
+Pillow
+numpy==1.19.2
+flask
