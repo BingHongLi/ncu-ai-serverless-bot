@@ -5,7 +5,7 @@ sim_app.py
 .aws-sam
 venv
 .idea
-aws_user_credentials.csv
+aws_user_credentials*
 
 # Created by https://www.gitignore.io/api/osx,linux,python,windows,pycharm,visualstudiocode
 

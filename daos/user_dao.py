@@ -2,6 +2,7 @@ from models.user import User
 
 import boto3
 import os
+from decimal import Decimal
 class UserDAO:
 
     # 檢查表格，若不存在，則創建
@@ -44,12 +45,28 @@ class UserDAO:
     @classmethod
     def get_user_by_id(cls,line_user_id:str):
         print(f"讀取用戶資料，用戶id為 {line_user_id}")
-        user = cls.users_ref.get_item(
+        item_dict = cls.users_ref.get_item(
             Key={
             "line_user_id":line_user_id
             }
         )
+        user_dict=item_dict.get('Item')
+        user=User.from_dict(user_dict)
         return user
 
     # 更新資料
+    @classmethod
+    def update_user_image_quota(cls,user):
 
+        print(f'更新用戶資料')
+        update_response = cls.users_ref.update_item(
+            Key={
+                "line_user_id": user.line_user_id
+            },
+            UpdateExpression="set ai_image_quota=:n",
+            ExpressionAttributeValues={
+                ':n': Decimal(user.ai_image_quota),
+            },
+            ReturnValues="UPDATED_NEW"
+        )
+        return update_response

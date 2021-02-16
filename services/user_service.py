@@ -25,13 +25,7 @@ class UserService:
         # 取個資
         line_user_profile = cls.line_bot_api.get_profile(event.source.user_id)
         # line_user_profile= cls.line_bot_api.get_profile(event)
-        print(line_user_profile)
-        print(type(line_user_profile))
-        print(line_user_profile.user_id)
-        print(line_user_profile.picture_url)
-        print(line_user_profile.display_name)
-        print(line_user_profile.status_message)
-        print(line_user_profile.language)
+
         # event轉換成user
         user = User(
             line_user_id=line_user_profile.user_id,
@@ -44,14 +38,14 @@ class UserService:
 
         # 取得用戶照片，存放回cloud storage，並將連結存回user的連結
         if user.line_user_pic_url is not None:
-            file_name = user.line_user_id + '.jpg'
+            file_name = f"/tmp/{user.line_user_id}.jpg"
             urllib.request.urlretrieve(user.line_user_pic_url, file_name)
 
             # 更換為s3的做法
             storage_client = boto3.client('s3')
             bucket_name = os.environ['USER_INFO_GS_BUCKET_NAME']
             destination_blob_name = f'{user.line_user_id}/user_pic.png'
-            # storage_client.upload_file(file_name, bucket_name, destination_blob_name)
+            storage_client.upload_file(file_name, bucket_name, destination_blob_name)
             destination_url = f'https://{bucket_name}.s3.amazonaws.com//{user.line_user_id}/user_pic.png'
             user.line_user_pic_url = destination_url
 
@@ -60,6 +54,7 @@ class UserService:
 
         # 打印結果
         print(user)
+        os.remove(file_name)
 
         # 回傳結果給handler
         # 關注的部分，不回傳，交由控制台回傳

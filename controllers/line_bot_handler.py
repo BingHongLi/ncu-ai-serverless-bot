@@ -21,4 +21,4 @@ class LineBotController:
 
     @classmethod
     def image_event(cls,event):
-        LineImageService.ai_image_detect(event)
+        LineImageService.ai_face_compare_aws_rekognition_model(event)
