@@ -18,8 +18,12 @@ import os
 import boto3
 from daos.user_dao import UserDAO
 from models.user import User
-class LineImageService:
 
+'''
+ai_face_compare_aws_rekognition_model:調度AWS 雲端AI模型
+ai_face_compare_local_model:調度本地AI模型
+'''
+class LineImageService:
 
     line_bot_api = LineBotApi(channel_access_token=os.environ.get("LINE_CHANNEL_ACCESS_TOKEN"))
 
@@ -29,6 +33,7 @@ class LineImageService:
         # 取得用戶資料，檢測用戶的用量，若為0，則發訊息
         user:User = UserDAO.get_user_by_id(event.source.user_id)
 
+        # 若用戶的圖片允許量為0，則不允許操作
         if int(user.ai_image_quota) <= 0 :
             cls.line_bot_api.reply_message(
                 event.reply_token,
@@ -37,26 +42,28 @@ class LineImageService:
                 )
             )
         else:
+            # 調度客戶端，並載入對比主照片
             reko_client = boto3.client('rekognition')
             imageSource = open("converted_savedmodel/compare_source.jpg", 'rb')
 
+            # 跟Line取用照片，並讀取
             message_content = cls.line_bot_api.get_message_content(event.message.id)
             file_name = f"/tmp/{event.source.user_id}_{event.message.id}.jpg"
             with open(file_name, 'wb') as fd:
                 for chunk in message_content.iter_content():
                     fd.write(chunk)
-
             imageTarget = open(file_name, 'rb')
 
             try:
-
+                # 交給AWS進行比對
                 compare_response = reko_client.compare_faces(
                     SimilarityThreshold=80,
                     SourceImage={'Bytes': imageSource.read()},
                     TargetImage={'Bytes': imageTarget.read()}
                 )
                 print(compare_response)
-                print(len(compare_response['FaceMatches']))
+                # print(len(compare_response['FaceMatches']))
+
                 user.ai_image_quota = user.ai_image_quota - 1
                 UserDAO.update_user_image_quota(user)
 
@@ -75,6 +82,7 @@ class LineImageService:
                         )
                     )
 
+                # 將用戶的照片存回S3
                 storage_client = boto3.client('s3')
                 bucket_name = os.environ['USER_INFO_GS_BUCKET_NAME']
                 destination_blob_name = f'{user.line_user_id}/img/{event.message.id}.png'
@@ -83,6 +91,7 @@ class LineImageService:
 
             except:
 
+                # 用戶拍非人的圖片時
                 cls.line_bot_api.reply_message(
                     event.reply_token,
                     TextSendMessage(
@@ -90,60 +99,59 @@ class LineImageService:
                     )
                 )
 
+                user.ai_image_quota = user.ai_image_quota - 1
+                UserDAO.update_user_image_quota(user)
+
             finally:
                 os.remove(file_name)
 
-
-
-
-
-    @classmethod
-    def ai_face_compare_local_model(cls,event):
-
-        class_dict = {}
-        with open('converted_savedmodel/labels.txt') as f:
-            for line in f:
-                (key, val) = line.split()
-                class_dict[int(key)] = val
-
-        # Load the model
-        model = tensorflow.keras.models.load_model('converted_savedmodel/model.savedmodel', compile=False)
-
-        message_content = cls.line_bot_api.get_message_content(event.message.id)
-        file_name = '/tmp/' + event.message.id + '.jpg'
-        with open(file_name, 'wb') as fd:
-            for chunk in message_content.iter_content():
-                fd.write(chunk)
-
-        data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
-        image = Image.open(file_name)
-        size = (224, 224)
-        image = ImageOps.fit(image, size, Image.ANTIALIAS)
-        # turn the image into a numpy array
-        image_array = np.asarray(image)
-        # Normalize the image
-        normalized_image_array = (image_array.astype(np.float32) / 127.0 - 1)
-
-        # Load the image into the array
-        data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
-        data[0] = normalized_image_array[0:224, 0:224, 0:3]
-        # run the inference
-        prediction = model.predict(data)
-
-        max_probability_item_index = np.argmax(prediction[0])
-
-        if prediction.max() > 0.6:
-            cls.line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(
-                    """這個物件極有可能是 %s ，其相似機率為 %s ，他就是你的白馬王子。""" % (
-                    class_dict.get(max_probability_item_index), prediction[0][max_probability_item_index])
-                )
-            )
-        else:
-            cls.line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(
-                    """再混啊！亂拍照！！"""
-                )
-            )
+    # @classmethod
+    # def ai_face_compare_local_model(cls,event):
+    #
+    #     class_dict = {}
+    #     with open('converted_savedmodel/labels.txt') as f:
+    #         for line in f:
+    #             (key, val) = line.split()
+    #             class_dict[int(key)] = val
+    #
+    #     # Load the model
+    #     model = tensorflow.keras.models.load_model('converted_savedmodel/model.savedmodel', compile=False)
+    #
+    #     message_content = cls.line_bot_api.get_message_content(event.message.id)
+    #     file_name = '/tmp/' + event.message.id + '.jpg'
+    #     with open(file_name, 'wb') as fd:
+    #         for chunk in message_content.iter_content():
+    #             fd.write(chunk)
+    #
+    #     data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
+    #     image = Image.open(file_name)
+    #     size = (224, 224)
+    #     image = ImageOps.fit(image, size, Image.ANTIALIAS)
+    #     # turn the image into a numpy array
+    #     image_array = np.asarray(image)
+    #     # Normalize the image
+    #     normalized_image_array = (image_array.astype(np.float32) / 127.0 - 1)
+    #
+    #     # Load the image into the array
+    #     data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
+    #     data[0] = normalized_image_array[0:224, 0:224, 0:3]
+    #     # run the inference
+    #     prediction = model.predict(data)
+    #
+    #     max_probability_item_index = np.argmax(prediction[0])
+    #
+    #     if prediction.max() > 0.6:
+    #         cls.line_bot_api.reply_message(
+    #             event.reply_token,
+    #             TextSendMessage(
+    #                 """這個物件極有可能是 %s ，其相似機率為 %s ，他就是你的白馬王子。""" % (
+    #                 class_dict.get(max_probability_item_index), prediction[0][max_probability_item_index])
+    #             )
+    #         )
+    #     else:
+    #         cls.line_bot_api.reply_message(
+    #             event.reply_token,
+    #             TextSendMessage(
+    #                 """再混啊！亂拍照！！"""
+    #             )
+    #         )

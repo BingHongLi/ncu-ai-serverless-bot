@@ -24,6 +24,10 @@ Parameters:
     Type: String
     Description: My SomeVar
     Default: default value
+  USER_INFO_GS_BUCKET_NAME:
+    Type: String
+    Description: My SomeVar
+    Default: default value
 
 Resources:
   HelloWorldFunction:
@@ -41,6 +45,7 @@ Resources:
           DYNAMODB_LOCAL_PATH: !Ref DYNAMODB_LOCAL_PATH
           LINE_CHANNEL_SECRET: !Ref LINE_CHANNEL_SECRET
           LINE_CHANNEL_ACCESS_TOKEN: !Ref LINE_CHANNEL_ACCESS_TOKEN
+          USER_INFO_GS_BUCKET_NAME: !Ref USER_INFO_GS_BUCKET_NAME
 
     Metadata:
       DockerTag: python3.7-v1

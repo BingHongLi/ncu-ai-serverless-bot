@@ -1,9 +1,14 @@
 from __future__ import annotations
 '''
 抓出Line User的屬性
+並設置
+主要屬性，以供Dynamodb建置表格使用
+建構子
+from_dict，以dict去建構User物件
+to_dict，將User物件轉換成dict
+__repr__，客製化Print的內容
 '''
 import boto3
-
 class User(object):
 
     table_name="users"

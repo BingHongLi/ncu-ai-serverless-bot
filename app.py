@@ -16,6 +16,7 @@ from linebot.models import (FollowEvent,UnfollowEvent)
 from controllers.line_bot_handler import LineBotController
 import os
 import watchtower, logging
+
 line_bot_api = LineBotApi(os.environ.get('LINE_CHANNEL_ACCESS_TOKEN'))
 handler = WebhookHandler(os.environ.get('LINE_CHANNEL_SECRET'))
 
@@ -28,6 +29,8 @@ def lambda_handler(event, context):
 
     # get X-Line-Signature header value
     signature = event.get("headers").get('X-Line-Signature')
+    if signature is None:
+        signature = event.get("headers").get('x-line-signature')
 
     # get request body as text
     body = event.get("body")

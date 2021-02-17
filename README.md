@@ -77,15 +77,59 @@ sam local start-api --env-vars env.json --docker-network cxcxc-sam
 ./ngrok http --region ap  3000
 ```
 
-### (Optional) 部署至ECR，並放入Lambda
+# 部署
+
+## 流程簡述
+
+### 建置IAM User
+
+必須有以下服務的權限
 
 ```
-sam deploy --guided
+DynamoDB
+S3
+CloudWatch logs
+Elastic Container Registry
 ```
 
-### (Optional)觀察log
+### 建置S3 Bucket
+
+請將Bucket名字記錄下來，稍後會繼續使用
+
+
+### 建置DynamoDB(optional)
+
+### 建置IAM Role
+
+必須有以下服務權限
 
 ```
-sam logs -n HelloWorldFunction --stack-name 001_local_integrate_docker --tail
+DynamoDB
+S3
+CloudWatch logs
+Elastic Container Registry
+```
+
+### 建置ECR Repo
+
+### 在本地將程式碼封裝成docker image，並推入先前建置的雲端ECR Repo
 
 ```
+# 在專案根目錄下執行
+# 事前必須已經使用aws configure登入過
+aws ecr get-login-password --region YOUR-REGION | docker login --username AWS --password-stdin YOUR-ACCOUNT-ID.dkr.ecr.YOUR-REGION.amazonaws.com
+docker build -t YOUR-ACCOUNT-ID.dkr.ecr.YOUR-REGION.amazonaws.com/YOUR-REPO-NAME .
+docker push YOUR-ACCOUNT-ID.dkr.ecr.YOUR-REGION.amazonaws.com/YOUR-REPO-NAME
+```
+
+### 創建Lambda Function，選用Container Image方案，並引入環境變數
+
+```
+LINE_CHANNEL_SECRET
+LINE_CHANNEL_ACCESS_TOKEN
+USER_INFO_GS_BUCKET_NAME
+```
+
+### 創建API Gateway，並集成先前的Lambda函數
+
+### 將API Gateway 生成的URI，貼回LINE Develop Console

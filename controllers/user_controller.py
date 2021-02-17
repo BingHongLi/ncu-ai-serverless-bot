@@ -2,6 +2,9 @@ from services.user_service import UserService
 
 import json
 
+'''
+用戶GET查詢路徑時，下達line_user_id，可查閱用戶資料
+'''
 class UserController:
 
     @classmethod
